@@ -63,6 +63,10 @@ abstract class DeferredPersistentTokenStore<T> @JvmOverloads constructor(
      */
     fun clear() {
         this.memoryData.clear()
+
+        if (autoPersist) {
+            persist()
+        }
     }
 
     /**
