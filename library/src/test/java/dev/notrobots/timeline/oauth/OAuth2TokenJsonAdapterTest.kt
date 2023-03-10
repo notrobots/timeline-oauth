@@ -4,7 +4,7 @@ import com.github.scribejava.core.model.OAuth2AccessToken
 import org.json.JSONObject
 import org.junit.Test
 
-internal class OAuth2AccessTokenJsonAdapterTest {
+internal class OAuth2TokenJsonAdapterTest {
     private val token = OAuth2AccessToken(
         "@",
         "bearer",
@@ -25,11 +25,11 @@ internal class OAuth2AccessTokenJsonAdapterTest {
 
     @Test
     fun serializeToken() {
-        assert(OAuth2AccessTokenJsonAdapter.toJsonString(token) == JSONObject(tokenJson).toString(0))
+        assert(OAuth2TokenJsonAdapter.toJsonString(token) == JSONObject(tokenJson).toString(0))
     }
 
     @Test
     fun deserializeToken() {
-        assert(OAuth2AccessTokenJsonAdapter.fromJson(tokenJson) == token)
+        assert(OAuth2TokenJsonAdapter.fromJson(tokenJson) == token)
     }
 }

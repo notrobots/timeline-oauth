@@ -3,8 +3,8 @@ package dev.notrobots.timeline.oauth
 import com.github.scribejava.core.model.OAuth2AccessToken
 import org.json.JSONObject
 
-object OAuth2AccessTokenJsonAdapter {
-    fun toJson(token: OAuth2AccessToken): JSONObject {
+object OAuth2TokenJsonAdapter {
+    fun toJson(token: OAuth2Token): JSONObject {
         return JSONObject().apply {
             put("access_token", token.accessToken)
             put("token_type", token.tokenType)
@@ -14,20 +14,19 @@ object OAuth2AccessTokenJsonAdapter {
         }
     }
 
-    fun toJsonString(token: OAuth2AccessToken): String {
+    fun toJsonString(token: OAuth2Token): String {
         return toJson(token).toString(0)
     }
 
-    fun fromJson(token: String): OAuth2AccessToken {
+    fun fromJson(token: String): OAuth2Token {
         val json = JSONObject(token)
 
-        return OAuth2AccessToken(
+        return OAuth2Token(
             json.optString("access_token"),
             json.optString("token_type"),
             json.optString("expires_in", "0").toInt(),
             json.optString("refresh_token"),
-            json.optString("scope"),
-            ""
+            json.optString("scope")
         )
     }
 }

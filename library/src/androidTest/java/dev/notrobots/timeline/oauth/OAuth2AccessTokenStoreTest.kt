@@ -12,7 +12,7 @@ class OAuth2AccessTokenStoreTest {
     @Test
     fun Store_And_Fetch() {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        val tokenStore = OAuth2AccessTokenStore(appContext)
+        val tokenStore = OAuth2TokenStore(appContext)
         val token = OAuth2AccessToken(
             "@",
             "bearer",
