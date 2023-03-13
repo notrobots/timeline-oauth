@@ -23,9 +23,9 @@ object OAuth2TokenJsonAdapter {
 
         return OAuth2Token(
             json.optString("access_token"),
-            json.optString("token_type"),
+            json.optString("refresh_token") ,
             json.optString("expires_in", "0").toInt(),
-            json.optString("refresh_token"),
+            json.optString("token_type"),
             json.optString("scope")
         )
     }
