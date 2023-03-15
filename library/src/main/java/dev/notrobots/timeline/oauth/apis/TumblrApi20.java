@@ -13,6 +13,16 @@ public class TumblrApi20 extends DefaultApi20 {
         return "https://www.tumblr.com/oauth2/authorize";
     }
 
+    @Override
+    public String getRefreshTokenEndpoint() {
+        return "https://api.tumblr.com/v2/oauth2/token";
+    }
+
+    @Override
+    public String getRevokeTokenEndpoint() {
+        return null;
+    }
+
     private static class InstanceHolder {
         private static final TumblrApi20 INSTANCE = new TumblrApi20();
     }
