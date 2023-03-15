@@ -9,9 +9,23 @@ class OAuth2Token(
     refreshToken: String,
     expiresIn: Int,
     tokenType: String,
-    scope: String
-) : OAuth2AccessToken(accessToken, refreshToken, expiresIn, tokenType, scope, "") {  //TODO: Add the actual raw response
-    val expirationDate = Date(Date().time + TimeUnit.SECONDS.toMillis(expiresIn.toLong()))
+    scope: String,
+    val expirationDate: Date
+) : OAuth2AccessToken(accessToken, tokenType, expiresIn, refreshToken, scope, "") {  //TODO: Add the actual raw response
+    constructor(
+        accessToken: String,
+        refreshToken: String,
+        expiresIn: Int,
+        tokenType: String,
+        scope: String
+    ) : this(
+        accessToken,
+        refreshToken,
+        expiresIn,
+        tokenType,
+        scope,
+        Date(Date().time + TimeUnit.SECONDS.toMillis(expiresIn.toLong()))
+    )
 
     constructor(token: OAuth2AccessToken) : this(
         token.accessToken,
