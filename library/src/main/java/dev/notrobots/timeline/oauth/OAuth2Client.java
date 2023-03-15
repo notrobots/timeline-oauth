@@ -142,9 +142,12 @@ public abstract class OAuth2Client {
             } catch (Exception e) {
                 throw new RuntimeException("Cannot revoke token", e);
             }
-
-            getTokenStore().delete(getClientId());
         }
+    }
+
+    public void logout() {
+        revokeAccessToken();
+        getTokenStore().delete(getClientId());
     }
 
     /**
