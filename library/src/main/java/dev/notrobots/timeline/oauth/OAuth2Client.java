@@ -2,7 +2,10 @@ package dev.notrobots.timeline.oauth;
 
 import android.net.Uri;
 
+import androidx.annotation.WorkerThread;
 import com.github.scribejava.core.exceptions.OAuthException;
+import com.github.scribejava.core.model.OAuthRequest;
+import com.github.scribejava.core.model.Response;
 import com.github.scribejava.core.oauth.OAuth20Service;
 
 public abstract class OAuth2Client {
@@ -12,9 +15,18 @@ public abstract class OAuth2Client {
     private OAuth2Token lastToken;
 
     protected OAuth2Client(OAuth20Service authService, OAuth2TokenStore tokenStore, String clientId) {
+        if (tokenStore == null) {
+            throw new RuntimeException("TokenStore cannot be null");
+        }
+
+        if (clientId == null || clientId.isEmpty()) {
+            throw new RuntimeException("ClientId cannot be null or empty");
+        }
+
         this.authService = authService;
         this.tokenStore = tokenStore;
         this.clientId = clientId;
+        this.lastToken = tokenStore.fetch(clientId);
     }
 
     public boolean isFinalRequestUrl(String url) {
@@ -54,10 +66,11 @@ public abstract class OAuth2Client {
 
     public void onUserChallenge(String url, String state) {
         String code = getChallengeCode(url, state);
+
         try {
             OAuth2Token token = new OAuth2Token(getAuthService().getAccessToken(code));
 
-            tokenStore.store(clientId, token);
+            storeNewAccessToken(token);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -76,10 +89,30 @@ public abstract class OAuth2Client {
     }
 
     public OAuth2Token getLastToken() {
-        if (tokenStore == null) {
-            throw new RuntimeException("Token store was not provided");
-        }
+        return lastToken;
+    }
 
+    private void storeNewAccessToken(OAuth2Token token) {
+        tokenStore.store(clientId, token);
+        lastToken = token;
+    }
+
+    /**
+     * Checks if the last access token is expired and refreshes it
+     */
+    @WorkerThread
+    public void refreshAccessTokenIfNeeded() {
+        if (lastToken.isExpired()) {
+            try {
+                refreshAccessToken();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    @WorkerThread
+    public void refreshAccessToken() {
         if (lastToken == null) {
             lastToken = tokenStore.fetch(clientId);
         }
@@ -88,15 +121,60 @@ public abstract class OAuth2Client {
             throw new RuntimeException("Client with id " + clientId + " is not authorized");
         }
 
-        if (lastToken.isExpired()) {
-            try {
-                lastToken = new OAuth2Token(getAuthService().refreshAccessToken(lastToken.getRefreshToken()));
-                tokenStore.store(clientId, lastToken);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+        String refreshToken = lastToken.getRefreshToken();
+
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            throw new RuntimeException("Refresh token cannot be null or empty");
         }
 
-        return lastToken;
+        try {
+            OAuth2Token newToken = new OAuth2Token(authService.refreshAccessToken(lastToken.getRefreshToken()));
+            storeNewAccessToken(newToken);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void revokeAccessToken() {
+        if (authService.getApi().getRevokeTokenEndpoint() != null) {
+            try {
+                getAuthService().revokeToken(getLastToken().getAccessToken());
+            } catch (Exception e) {
+                throw new RuntimeException("Cannot revoke token", e);
+            }
+
+            getTokenStore().delete(getClientId());
+        }
+    }
+
+    /**
+     * Executes the given request and signs it with the most recent oauth2 access token.
+     *
+     * If the current token is expired it will be refreshed.
+     *
+     * @param request The request to send
+     * @return Request response
+     */
+    @WorkerThread
+    protected Response sendRequest(OAuthRequest request) {
+        try {
+            refreshAccessTokenIfNeeded();
+            sign(request);
+            return getAuthService().execute(request);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Signs the given request with the most recent access token
+     * @param request Request to sign
+     */
+    protected void sign(OAuthRequest request) {
+        if (lastToken == null) {
+            throw new RuntimeException("Cannot sign request. Token is null");
+        }
+
+        request.addHeader("Authorization", "Bearer " + lastToken.getAccessToken());
     }
 }
